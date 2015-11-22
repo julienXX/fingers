@@ -16,6 +16,9 @@ static TOKEN: &'static str = "YOUR_SLACK_TOKEN";
 pub struct Profile {
     real_name: Option<String>,
     email: Option<String>,
+    skype: Option<String>,
+    phone: Option<String>,
+    title: Option<String>
 }
 
 #[derive(Debug, RustcDecodable)]
@@ -80,14 +83,16 @@ fn get_user_details(username: String) -> Option<User> {
 }
 
 fn format_user_details(user: User) {
-    println!("{:?}", user);
-    println!("{0: <10} {1: <20} {2: <20} {3: <20} {4: <10}",
-             "Login", "Name", "Email", "Time zone", "Presence");
+    println!("{0: <10} {1: <20} {2: <15} {3: <20} {4: <15} {5: <20} {6: <20} {7: <10}",
+             "Login", "Name", "Title", "Email", "Skype", "Phone", "Time zone", "Presence");
 
-    println!("{0: <10} {1: <20} {2: <20} {3: <20} {4: <10}",
+    println!("{0: <10} {1: <20} {2: <15} {3: <20} {4: <15} {5: <20} {6: <20} {7: <10}",
              user.name,
              user.profile.real_name.unwrap(),
-             user.profile.email.unwrap(),
+             user.profile.title.unwrap_or_else(|| "".to_owned()),
+             user.profile.email.unwrap_or_else(|| "".to_owned()),
+             user.profile.skype.unwrap_or_else(|| "".to_owned()),
+             user.profile.phone.unwrap_or_else(|| "".to_owned()),
              user.tz.unwrap(),
              user.presence);
 }

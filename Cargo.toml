@@ -1,0 +1,8 @@
+[package]
+name = "fingers"
+version = "0.1.0"
+authors = ["Julien Blanchard <julien@sideburns.eu>"]
+
+[dependencies]
+hyper = "*"
+rustc-serialize = "*"

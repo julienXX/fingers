@@ -10,7 +10,7 @@ use hyper::header::Connection;
 use rustc_serialize::json::{self, Json};
 
 static API_URL: &'static str = "https://slack.com/api/";
-static TOKEN: &'static str = "";
+static TOKEN: &'static str = "YOUR_SLACK_TOKEN";
 
 #[derive(Debug, RustcDecodable)]
 pub struct Profile {
@@ -19,7 +19,7 @@ pub struct Profile {
 }
 
 #[derive(Debug, RustcDecodable)]
-pub struct Member {
+pub struct User {
     id: String,
     name: String,
     presence: String,
@@ -30,8 +30,7 @@ pub struct Member {
 fn main() {
     match env::args().nth(1) {
         Some(username) => {
-            let response = get_details(username);
-            println!("- finished {:?}", response);
+            get_details(username);
         }
         None => {
             println!("Usage: fingers <username>");
@@ -47,7 +46,7 @@ fn api_url(method: String) -> String {
 fn get_details(username: String) {
     match get_user_details(username) {
         Some(user) => {
-            println!("{:?}", user);
+            format_user_details(user);
         }
         None => {
             println!("No user found with that name.");
@@ -56,7 +55,7 @@ fn get_details(username: String) {
     };
 }
 
-fn get_user_details(username: String) -> Option<Member> {
+fn get_user_details(username: String) -> Option<User> {
     let url = api_url("users.list".to_owned()) + "&presence=1";
     let client = Client::new();
 
@@ -69,13 +68,26 @@ fn get_user_details(username: String) -> Option<Member> {
 
     let json_body = Json::from_str(&body).unwrap();
     let json_object = json_body.as_object().unwrap();
-    let members = json_object.get("members").unwrap();
+    let users = json_object.get("members").unwrap();
 
-    for member in members.as_array().unwrap() {
-        let member: Member = json::decode(&member.to_string()).unwrap();
-        if member.name == username {
-            return Some(member);
+    for user in users.as_array().unwrap() {
+        let user: User = json::decode(&user.to_string()).unwrap();
+        if user.name == username {
+            return Some(user);
         }
     }
     None
+}
+
+fn format_user_details(user: User) {
+    println!("{:?}", user);
+    println!("{0: <10} {1: <20} {2: <20} {3: <20} {4: <10}",
+             "Login", "Name", "Email", "Time zone", "Presence");
+
+    println!("{0: <10} {1: <20} {2: <20} {3: <20} {4: <10}",
+             user.name,
+             user.profile.real_name.unwrap(),
+             user.profile.email.unwrap(),
+             user.tz.unwrap(),
+             user.presence);
 }

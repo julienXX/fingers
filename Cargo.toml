@@ -6,3 +6,4 @@ authors = ["Julien Blanchard <julien@sideburns.eu>"]
 [dependencies]
 hyper = "*"
 rustc-serialize = "*"
+tabwriter = "*"

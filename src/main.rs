@@ -1,5 +1,6 @@
 extern crate hyper;
 extern crate rustc_serialize;
+extern crate tabwriter;
 
 use std::io::Read;
 use std::env;
@@ -8,6 +9,9 @@ use hyper::Client;
 use hyper::header::Connection;
 
 use rustc_serialize::json::{self, Json};
+
+use std::io::Write;
+use tabwriter::TabWriter;
 
 static API_URL: &'static str = "https://slack.com/api/";
 static TOKEN: &'static str = "YOUR_SLACK_TOKEN";
@@ -83,16 +87,21 @@ fn get_user_details(username: String) -> Option<User> {
 }
 
 fn format_user_details(user: User) {
-    println!("{0: <10} {1: <20} {2: <15} {3: <20} {4: <15} {5: <20} {6: <20} {7: <10}",
-             "Login", "Name", "Title", "Email", "Skype", "Phone", "Time zone", "Presence");
+    let mut tw = TabWriter::new(Vec::new());
+    write!(&mut tw, "
+ Login\t Name\t Title\t Email\t Skype\t Phone\t Timezone\t Presence\t
+ {}\t {}\t {}\t {}\t {}\t {}\t {}\t {}
+ ",
+           user.name,
+           user.profile.real_name.unwrap(),
+           user.profile.title.unwrap_or_else(|| "".to_owned()),
+           user.profile.email.unwrap_or_else(|| "".to_owned()),
+           user.profile.skype.unwrap_or_else(|| "".to_owned()),
+           user.profile.phone.unwrap_or_else(|| "".to_owned()),
+           user.tz.unwrap(),
+           user.presence).unwrap();
+    tw.flush().unwrap();
 
-    println!("{0: <10} {1: <20} {2: <15} {3: <20} {4: <15} {5: <20} {6: <20} {7: <10}",
-             user.name,
-             user.profile.real_name.unwrap(),
-             user.profile.title.unwrap_or_else(|| "".to_owned()),
-             user.profile.email.unwrap_or_else(|| "".to_owned()),
-             user.profile.skype.unwrap_or_else(|| "".to_owned()),
-             user.profile.phone.unwrap_or_else(|| "".to_owned()),
-             user.tz.unwrap(),
-             user.presence);
+    let out_table = String::from_utf8(tw.unwrap()).unwrap();
+    println!("{}", out_table);
 }

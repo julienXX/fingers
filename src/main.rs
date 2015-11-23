@@ -14,7 +14,7 @@ use std::io::Write;
 use tabwriter::TabWriter;
 
 static API_URL: &'static str = "https://slack.com/api/";
-static TOKEN: &'static str = "YOUR_SLACK_TOKEN";
+static TOKEN: &'static str = env!("SLACK_TOKEN");
 
 #[derive(Debug, RustcDecodable)]
 pub struct Profile {

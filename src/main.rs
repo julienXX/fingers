@@ -4,6 +4,7 @@ extern crate tabwriter;
 
 use std::io::Read;
 use std::env;
+use std::process;
 
 use hyper::Client;
 use hyper::header::Connection;
@@ -14,7 +15,6 @@ use std::io::Write;
 use tabwriter::TabWriter;
 
 static API_URL: &'static str = "https://slack.com/api/";
-static TOKEN: &'static str = env!("SLACK_TOKEN");
 
 #[derive(Debug, RustcDecodable)]
 pub struct Profile {
@@ -47,7 +47,13 @@ fn main() {
 }
 
 fn api_url(method: String) -> String {
-    API_URL.to_string() + &method + "?token=" + TOKEN
+    match env::var("SLACK_TOKEN") {
+        Ok(token) => API_URL.to_string() + &method + "?token=" + &*token,
+        Err(_) => {
+            println!("You must define a SLACK_TOKEN env variable");
+            process::exit(1)
+        }
+    }
 }
 
 fn get_details(username: String) {
@@ -57,7 +63,7 @@ fn get_details(username: String) {
         }
         None => {
             println!("No user found with that name.");
-            return;
+            process::exit(1)
         }
     };
 }

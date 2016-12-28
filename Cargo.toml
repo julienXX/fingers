@@ -4,6 +4,6 @@ version = "0.1.0"
 authors = ["Julien Blanchard <julien@sideburns.eu>"]
 
 [dependencies]
-hyper = "*"
-rustc-serialize = "*"
-tabwriter = "*"
+hyper = "0.6.16"
+rustc-serialize = "0.3.16"
+tabwriter = "0.1.24"

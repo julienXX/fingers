@@ -1,188 +1,97 @@
+dist: trusty
 language: rust
-cache: cargo
+services: docker
+sudo: required
+
+rust: stable
 
 env:
   global:
-    # This will be part of the release tarball
-    - PROJECT_NAME=fingers
+    - CRATE_NAME=fingers
+    - DEPLOY_VERSION=stable
 
-# AFAICT There are a few ways to set up the build jobs. This one is not the DRYest but I feel is the
-# easiest to reason about.
 matrix:
+  exclude:
+    - language: rust
   include:
-    # Stable channel
-    - os: linux
-      rust: stable
-      env: TARGET=aarch64-unknown-linux-gnu
-      # need Trusty because the glibc in Precise is too old and doesn't support 64-bit arm
-      dist: trusty
-      sudo: required
-      # Extra packages only for this job
+    # Linux
+    - env:
+        - TARGET=i686-unknown-linux-gnu
       addons:
         apt:
-          packages: &aarch64_unknown_linux_gnu
-            # Transparent emulation
-            - qemu-user-static
-            - binfmt-support
+          packages:
             - libssl-dev
-    - os: linux
-      rust: stable
-      env: TARGET=armv7-unknown-linux-gnueabihf
-      # sudo is needed for binfmt_misc, which is needed for transparent user qemu emulation
-      sudo: required
+    - env:
+        - TARGET=i686-unknown-linux-musl
       addons:
         apt:
-          packages: &armv7_unknown_linux_gnueabihf
-            # Cross compiler and cross compiled C libraries
-            - gcc-arm-linux-gnueabihf
-            - libc6-armhf-cross
-            - libc6-dev-armhf-cross
-            # Transparent emulation
-            - qemu-user-static
-            - binfmt-support
+          packages:
             - libssl-dev
-    - os: osx
-      rust: stable
-      env:
+    - env:
+        - TARGET=x86_64-unknown-linux-gnu
+      addons:
+        apt:
+          packages:
+            - libssl-dev
+    - env:
+        - TARGET=x86_64-unknown-linux-musl
+      addons:
+        apt:
+          packages:
+            - libssl-dev
+
+    # OSX
+    - env:
         - TARGET=i686-apple-darwin
-        - OPENSSL_INCLUDE_DIR=/usr/local/Cellar/openssl/1.0.2j/include/
+        - OPENSSL_INCLUDE_DIR=/usr/local/opt/openssl/include
+      os: osx
       before_install:
         - brew update
         - brew install openssl
-    - os: linux
-      rust: stable
-      env: TARGET=i686-unknown-linux-gnu
-      addons:
-        apt:
-          packages: &i686_unknown_linux_gnu
-            # Cross compiler and cross compiled C libraries
-            - gcc-multilib
-            - libssl-dev
-    - os: osx
-      rust: stable
-      env:
+    - env:
         - TARGET=x86_64-apple-darwin
-        - OPENSSL_INCLUDE_DIR=/usr/local/Cellar/openssl/1.0.2j/include/
-    - os: linux
-      rust: stable
-      env: TARGET=x86_64-unknown-linux-gnu
-      addons:
-        apt:
-          packages: *i686_unknown_linux_gnu
-    # Beta channel
-    - os: linux
-      rust: beta
-      env: TARGET=aarch64-unknown-linux-gnu
-      dist: trusty
-      sudo: required
-      addons:
-        apt:
-          packages: *aarch64_unknown_linux_gnu
-    - os: linux
-      rust: beta
-      env: TARGET=armv7-unknown-linux-gnueabihf
-      sudo: required
-      addons:
-        apt:
-          # Use the same packages the stable version uses
-          packages: *armv7_unknown_linux_gnueabihf
-    - os: osx
-      rust: beta
-      env:
-        - TARGET=i686-apple-darwin
-        - OPENSSL_INCLUDE_DIR=/usr/local/Cellar/openssl/1.0.2j/include/
-    - os: linux
-      rust: beta
-      env: TARGET=i686-unknown-linux-gnu
-      addons:
-        apt:
-          packages: *i686_unknown_linux_gnu
-    - os: osx
-      rust: beta
-      env:
-        - TARGET=x86_64-apple-darwin
-        - OPENSSL_INCLUDE_DIR=/usr/local/Cellar/openssl/1.0.2j/include/
-    - os: linux
-      rust: beta
-      env: TARGET=x86_64-unknown-linux-gnu
-    # Nightly channel
-    - os: linux
-      rust: nightly
-      env: TARGET=aarch64-unknown-linux-gnu
-      dist: trusty
-      sudo: required
-      addons:
-        apt:
-          packages: *aarch64_unknown_linux_gnu
-    - os: linux
-      rust: nightly
-      env: TARGET=armv7-unknown-linux-gnueabihf
-      sudo: required
-      addons:
-        apt:
-          # Use the same packages the stable version uses
-          packages: *armv7_unknown_linux_gnueabihf
-    - os: osx
-      rust: nightly
-      env:
-        - TARGET=i686-apple-darwin
-        - OPENSSL_INCLUDE_DIR=/usr/local/Cellar/openssl/1.0.2j/include/
-    - os: linux
-      rust: nightly
-      env: TARGET=i686-unknown-linux-gnu
-      addons:
-        apt:
-          packages: *i686_unknown_linux_gnu
-    - os: osx
-      rust: nightly
-      env:
-        - TARGET=x86_64-apple-darwin
-        - OPENSSL_INCLUDE_DIR=/usr/local/Cellar/openssl/1.0.2j/include/
-    - os: linux
-      rust: nightly
-      env: TARGET=x86_64-unknown-linux-gnu
-  allow_failures:
-    # TODO You might need to allow failures for some target on some channel for some reason. Below
-    # there's one (commented out) example of how to do that. Just change the OS, channel and TARGET
-    # as needed.
-    # - os: linux
-    #   rust: stable
-    #   env: TARGET=x86_64-unknown-linux-gnu
-
-before_install:
-  - export PATH="$PATH:$HOME/.cargo/bin"
+        - OPENSSL_INCLUDE_DIR=/usr/local/opt/openssl/include
+      os: osx
+      before_install:
+        - brew update
+        - brew install openssl
 
 install:
-  - bash ci/install.sh
+  - sh ci/install.sh
+  - source ~/.cargo/env || true
 
-script:
-  - bash ci/script.sh
+# script:
+#   - bash ci/script.sh
 
 before_deploy:
-  - bash ci/before_deploy.sh
+  - sh ci/before_deploy.sh
 
 deploy:
-  provider: releases
   api_key:
     secure: "kp8TDTqUY3VELkUfx0jr67u6T/IXNuqUCoTtrKOR6C2qX7dGo2CGIXweq9ugnGwHuYrQd5FjHKj0YLtlYKc79dINgfsfEhfQ4ijMylpgusldZzHNax5dYkRTXUIS7yd/kfq0dRnX/hWcJEatA+wFwp+93H7IJI8GFlPUsYvrW6HDzlAo5JZKYUSQN3aSJw34QAmOICvxU9LPtPyNHbzQ3OFazg77GDPg8GIzvdIyTL7VQk1vJRLYeNqicVAEnpMUkbLdMlgLFIDdzOM3X9q9e5ci9mBCwO7TYwsMWw0JtmtBSOMBr44E1mgk21/b/8+z2D0cSyoJJXXGcX6BrtgOIV8UJKniCAx7kpvlbb3mtvUcYdMlvxbygSju9h8SHrWROtzZwVUudSEyDKig/fg2iVvVzIN9QsoGHKqYSyP8WtkBtwLkj9dJfmQCZS7uVu1iCE2ofeIpHtE3KgkZolLd+P9a42H4Dw0pkWXIl/qnd9Eff5tNlszTlw3ljExZt0MxaNO9DXCZXaJjgYIqOqyDNqs8/13P11E8VRRn8NAPLwyxqkvn+1SfuMrdRyIkdPjOJ9xt1NK7w3uC9Lznyb3z916S2V8jp1/Zb1Bi1prse2o9fxelKERIyOlOSvmWGvoODDeI1XnMg/EYBOK/1UwFtuAS3d7V0I9TOF83sFvyxqY="
   file_glob: true
-  file: ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.*
-  # don't delete the artifacts from previous phases
-  skip_cleanup: true
-  # deploy when a new tag is pushed
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
   on:
-    # channel to use to produce the release artifacts
-    condition: $TRAVIS_RUST_VERSION = stable
+    condition: $TRAVIS_RUST_VERSION = $DEPLOY_VERSION
     tags: true
+  provider: releases
+  skip_cleanup: true
+
+cache: cargo
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
 
 branches:
   only:
-    # Pushes and PR to the master branch
-    - master
-    # IMPORTANT Ruby regex to match tags. Required, or travis won't trigger deploys when a new tag
-    # is pushed. This regex matches semantic versions like v1.2.3-rc4+2016.02.22
+    # release tags
     - /^v\d+\.\d+\.\d+.*$/
+    - master
 
 notifications:
   email:
     on_success: never
+
+
+language: rust
+cache: cargo

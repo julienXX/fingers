@@ -29,7 +29,7 @@ pub struct Profile {
 pub struct User {
     id: String,
     name: String,
-    presence: String,
+    presence: Option<String>,
     profile: Profile,
     tz: Option<String>
 }
@@ -50,7 +50,10 @@ fn api_url(method: String) -> String {
     match env::var("SLACK_TOKEN") {
         Ok(token) => API_URL.to_string() + &method + "?token=" + &*token,
         Err(_) => {
-            println!("You must define a SLACK_TOKEN env variable");
+            println!("Oops SLACK_TOKEN env variable is missing.
+You can generate a token here https://api.slack.com/docs/oauth-test-tokens
+then in your teminal run:
+export SLACK_TOKEN=the_token_you_generated");
             process::exit(1)
         }
     }
@@ -81,15 +84,22 @@ fn get_user_details(username: String) -> Option<User> {
 
     let json_body = Json::from_str(&body).unwrap();
     let json_object = json_body.as_object().unwrap();
-    let users = json_object.get("members").unwrap();
 
-    for user in users.as_array().unwrap() {
-        let user: User = json::decode(&user.to_string()).unwrap();
-        if user.name == username {
-            return Some(user);
+    match json_object.get("members") {
+        None => {
+            println!("Oops looks like your SLACK_TOKEN env variable is not okay.");
+            process::exit(1)
+        },
+        Some(users) => {
+            for user in users.as_array().unwrap() {
+                let user: User = json::decode(&user.to_string()).unwrap();
+                if user.name == username {
+                    return Some(user);
+                }
+            }
+            None
         }
     }
-    None
 }
 
 fn format_user_details(user: User) {
@@ -104,8 +114,8 @@ fn format_user_details(user: User) {
            user.profile.email.unwrap_or_else(|| "".to_owned()),
            user.profile.skype.unwrap_or_else(|| "".to_owned()),
            user.profile.phone.unwrap_or_else(|| "".to_owned()),
-           user.tz.unwrap(),
-           user.presence).unwrap();
+           user.tz.unwrap_or_else(|| "".to_owned()),
+           user.presence.unwrap_or_else(|| "".to_owned())).unwrap();
     tw.flush().unwrap();
 
     let out_table = String::from_utf8(tw.unwrap()).unwrap();

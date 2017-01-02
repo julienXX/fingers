@@ -9,6 +9,7 @@ main() {
     case $TRAVIS_OS_NAME in
         linux)
             stage=$(mktemp -d)
+            sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install libssl-dev
             ;;
         osx)
             stage=$(mktemp -d -t tmp)
@@ -17,7 +18,7 @@ main() {
 
     test -f Cargo.lock || cargo generate-lockfile
 
-    cross rustc --bin fingers --target $TARGET --release -- -C lto
+    OPENSSL_INCLUDE_DIR=$OPENSSL_INCLUDE_DIR cross rustc --bin fingers --target $TARGET --release -- -C lto
 
     # TODO Update this to package the right artifacts
     cp target/$TARGET/release/fingers $stage/

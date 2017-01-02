@@ -9,6 +9,8 @@ env:
   global:
     - CRATE_NAME=fingers
     - DEPLOY_VERSION=stable
+    - TARGET=x86_64-unknown-linux-gnu
+    - OPENSSL_INCLUDE_DIR=/usr/include/openssl
 
 matrix:
   exclude:
@@ -60,9 +62,6 @@ install:
   - sh ci/install.sh
   - source ~/.cargo/env || true
 
-# script:
-#   - bash ci/script.sh
-
 before_deploy:
   - sh ci/before_deploy.sh
 
@@ -74,6 +73,7 @@ deploy:
   on:
     condition: $TRAVIS_RUST_VERSION = $DEPLOY_VERSION
     tags: true
+    all_branches: true
   provider: releases
   skip_cleanup: true
 
@@ -81,12 +81,6 @@ cache: cargo
 before_cache:
   # Travis can't cache files that are not readable by "others"
   - chmod -R a+r $HOME/.cargo
-
-branches:
-  only:
-    # release tags
-    - /^v\d+\.\d+\.\d+.*$/
-    - master
 
 notifications:
   email:
